@@ -2,13 +2,12 @@ import streamlit as st
 import google.generativeai as genai
 from models import BotResponse
 from news_manager import NewsManager
-from config import GEMINI_API_KEY, GEMINI_MODEL
-
-genai.configure(api_key=GEMINI_API_KEY)
+from config import GEMINI_MODEL
 
 class FootballChatbot:
-    def __init__(self):
-        self.news_manager = NewsManager()
+    def __init__(self, gemini_api_key: str, exa_api_key: str):
+        genai.configure(api_key=gemini_api_key)
+        self.news_manager = NewsManager(exa_api_key=exa_api_key)
         self.model = self._initialize_model()
         self.context = """
         You are an expert, direct football analyst. Your tone is confident and factual. Follow these rules absolutely:

@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from chatbot import FootballChatbot 
 
 INPUT_KEY = "user_input"
@@ -158,88 +159,158 @@ def main():
     )
     
     st.markdown("""
-        <style>
-        /* ... (General styling for stApp and Quick Action Cards remains the same) ... */
-        
-        /* 1. Styling for the SUBMIT button (Custom Blue) */
-        div.stFormSubmitButton > button {
-            background-color: #007bff !important; /* Bright Blue */
-            border-color: #007bff !important;
-            color: white;
-            font-size: 1.1em;
-            font-weight: bold;
-            height: 50px; 
-            border-radius: 10px;
-            margin-top: 15px; 
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
-            transition: all 0.2s ease-in-out;
-        }
-        div.stFormSubmitButton > button:hover {
-            background-color: #0056b3 !important; /* Darker Blue on hover */
-            border-color: #0056b3 !important;
-            transform: scale(1.02);
-        }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
-        /* 2. Styling for the TOP-RIGHT "❌" button (Red/Maroon on hover) */
-        /* Targets the container holding the '❌' button */
-        div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:nth-child(2) button {
-            background-color: transparent !important;
-            border: none !important;
-            color: #AAAAAA !important; 
-            font-size: 20px;
-            padding: 0;
-            margin: 0;
-            line-height: 1;
-            height: 30px;
-            width: 30px;
-            box-shadow: none !important;
-            float: right; 
-        }
-        
-        /* Hover effect: Red for the Cancel/X button */
-        div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:nth-child(2) button:hover {
-            color: #FF4B4B !important; /* Turn red on hover */
-            background-color: transparent !important;
-            transform: scale(1.1);
-        }
+/* General Body and App Container */
+body {
+    color: #e0e0e0;
+    background-color: #121212;
+    font-family: 'Inter', sans-serif;
+}
+.stApp {
+    background-color: #121212;
+    color: #e0e0e0;
+}
 
-        /* Adjust margin for the title to align with the button */
-        div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:nth-child(1) {
-            padding-top: 0px; 
-        }
-        
-        /* Custom styles for references */
-        .reference-section {
-            margin-top: 10px;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-            color: #6c757d;
-        }
-        .reference-link {
-            display: block;
-            font-size: 0.85em;
-            color: #007bff;
-            text-decoration: none;
-            margin-bottom: 3px;
-            padding-left: 15px;
-        }
-        .reference-link:hover {
-            text-decoration: underline;
-            color: #0056b3;
-        }
+/* Main content area */
+.main .block-container {
+    background-color: #1e1e1e;
+    border-radius: 10px;
+    padding: 2rem;
+    border: 1px solid #333333;
+}
 
-        </style>
-    """, unsafe_allow_html=True)
+/* Sidebar */
+.st-emotion-cache-10oheav {
+    background-color: #1e1e1e;
+    border-right: 1px solid #333333;
+}
+.st-emotion-cache-10oheav .st-emotion-cache-16txtl3 {
+    color: #e0e0e0;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+}
+
+/* Chat messages */
+.st-emotion-cache-1c7y2kd {
+    background-color: #2a2a2a;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.st-emotion-cache-4oy321 {
+    color: #e0e0e0;
+}
+
+/* Quick Action Cards */
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div > div > div > button {
+    background-color: #333333;
+    color: #e0e0e0;
+    border: 1px solid #555555;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+}
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div > div > div > button:hover {
+    background-color: #8B0000;
+    color: white;
+    border-color: #8B0000;
+}
+
+/* Form Submit Button */
+div.stFormSubmitButton > button {
+    background-color: #8B0000 !important;
+    border-color: #8B0000 !important;
+    color: white;
+    font-size: 1.1em;
+    font-weight: bold;
+    height: 50px;
+    border-radius: 10px;
+    margin-top: 15px;
+    transition: all 0.2s ease-in-out;
+}
+div.stFormSubmitButton > button:hover {
+    background-color: #e0e0e0 !important;
+    color: #8B0000 !important;
+    border-color: #8B0000 !important;
+}
+
+/* Cancel Button */
+div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:nth-child(2) button {
+    background-color: transparent !important;
+    border: none !important;
+    color: #AAAAAA !important;
+    font-size: 20px;
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+    height: 30px;
+    width: 30px;
+    box-shadow: none !important;
+    float: right;
+    transition: all 0.3s ease;
+}
+div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:nth-child(2) button:hover {
+    color: #FF4B4B !important;
+    background-color: transparent !important;
+}
+
+/* Reference links */
+.reference-section {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #e0e0e0;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+}
+.reference-link {
+    display: block;
+    font-size: 0.85em;
+    color: #8B0000;
+    text-decoration: none;
+    margin-bottom: 3px;
+    padding-left: 15px;
+    transition: all 0.3s ease;
+}
+.reference-link:hover {
+    text-decoration: underline;
+    color: #e0e0e0;
+    padding-left: 20px;
+}
+</style>
+""", unsafe_allow_html=True)
+
     
     st.title("SocChat - Football News Chatbot ⚽")
     st.write("This chatbot is powered by Gemini and Exa.")
 
-    if "chatbot" not in st.session_state:
-        try:
-            st.session_state.chatbot = FootballChatbot()
-        except Exception as e:
-            st.error(f"Failed to initialize chatbot: {e}")
-            return
+    with st.sidebar:
+        st.header("API Keys")
+        api_keys_submitted = st.session_state.get("api_keys_submitted", False)
+
+        gemini_api_key = st.text_input("Gemini API Key", type="password", key="gemini_api_key_input", disabled=api_keys_submitted)
+        exa_api_key = st.text_input("Exa API Key", type="password", key="exa_api_key_input", disabled=api_keys_submitted)
+
+        if not api_keys_submitted:
+            if st.button("Submit"):
+                if gemini_api_key and exa_api_key:
+                    with st.spinner("Checking API..."):
+                        time.sleep(2)
+                        try:
+                            st.session_state.chatbot = FootballChatbot(gemini_api_key=gemini_api_key, exa_api_key=exa_api_key)
+                            st.session_state.api_keys_submitted = True
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Failed to initialize chatbot: {e}")
+                else:
+                    st.warning("Please enter both API keys.")
+
+    if "api_keys_submitted" not in st.session_state or not st.session_state.api_keys_submitted:
+        st.warning("Please enter your API keys in the sidebar and click 'Submit' to start the chatbot.")
+        return
             
     if "messages" not in st.session_state:
         st.session_state.messages = []

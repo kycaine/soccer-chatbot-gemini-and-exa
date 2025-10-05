@@ -2,11 +2,10 @@ import streamlit as st
 from exa_py import Exa
 from typing import List
 from models import NewsArticle
-from config import EXA_API_KEY
 
 class NewsManager:
-    def __init__(self):
-        self.exa_client = Exa(api_key=EXA_API_KEY)
+    def __init__(self, exa_api_key: str):
+        self.exa_client = Exa(api_key=exa_api_key)
 
     def fetch_football_news(self, query: str, max_results: int = 2) -> List[NewsArticle]:
         try:
