@@ -115,7 +115,102 @@ class FootballChatbot:
         return False
 
 
+    # File: chatbot.py
+
+# ... (kode impor dan __init__ di atas) ...
+
     def generate_response(self, query: str) -> BotResponse:
+        self.logger.info(f"--- New Response Generation Started for Query: '{query}' ---")
+        
+        self.logger.info("Step 1: Filtering context.")
+        # Memastikan pertanyaan masih tentang sepak bola
+        if not self._is_football_related(query, self._get_football_keywords()):
+            self.logger.warning("Query failed football-related check. Returning generic response.")
+            return BotResponse(
+                message="I can only answer questions about football. Please ask me something related to football.",
+                references=[],
+            )
+
+        self.logger.info("Step 2: Fetching news articles using Exa.")
+        articles = self.news_manager.fetch_football_news(query)
+        
+        # --- LOGIKA FALLBACK BARU: JIKA ARTIKEL KOSONG (dari Exa) ---
+        if not articles:
+            self.logger.warning("No valid articles found from Exa. Activating Gemini fallback to use general knowledge.")
+            
+            # Prompt baru untuk meminta Gemini menjawab dengan pengetahuan umumnya.
+            prompt = f"""
+            {self.context}
+            
+            **PENTING:** Anda tidak memiliki artikel berita yang disediakan untuk dianalisis. Jawab pertanyaan pengguna berikut berdasarkan pengetahuan umum Anda sebagai analis sepak bola. Gunakan gaya bahasa yang percaya diri, faktual, dan hindari mengatakan bahwa Anda tidak menemukan artikel.
+            
+            User question: {query}
+            """
+            
+        else:
+            self.logger.info(f"Found {len(articles)} articles. Constructing standard prompt for Gemini.")
+            
+            # Prompt STANDAR: Menggunakan artikel yang ditemukan
+            article_contents = "\n\n".join(
+                f"Article Title: {article.title}\nContent: {article.content}"
+                for article in articles
+            )
+            prompt = f"""
+            {self.context}
+
+            Articles to analyze:
+            {article_contents}
+
+            User question: {query}
+
+            Based ONLY on the content above, answer confidently and factually.
+            """
+        # --- AKHIR LOGIKA FALLBACK BARU ---
+        
+        self.logger.info("Step 3: Prompt constructed successfully.")
+        self.logger.info("Step 4: Calling Gemini API to generate content.")
+        
+        try:
+            response = self.model.generate_content(prompt)
+
+            # 1. Periksa apakah respons memiliki teks.
+            if response.text.strip():
+                self.logger.info("Gemini API call successful. Response received.")
+                # articles akan berisi data Exa jika ada, atau list kosong jika mode fallback.
+                return BotResponse(message=response.text, references=articles)
+            
+            # 2. Jika response.text kosong, periksa alasan penyelesaian (finish reason).
+            if response.candidates:
+                finish_reason = response.candidates[0].finish_reason.name
+                if finish_reason == "SAFETY":
+                    self.logger.error("Gemini response was blocked by safety settings.")
+                    return BotResponse(
+                        message="Your question was blocked by the safety filter. Please rephrase your query.",
+                        references=[]
+                    )
+                else:
+                    self.logger.warning(f"Gemini response was empty. Finish Reason: {finish_reason}. Using final fallback message.")
+            else:
+                self.logger.error("Gemini response was empty and candidates list is missing.")
+            
+            # Final Fallback jika respons kosong karena alasan non-pemblokiran yang tidak jelas.
+            return BotResponse(
+                message="I encountered an issue generating a response. Try rephrasing your question.",
+                references=articles
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error during Gemini API call: {e}", exc_info=True)
+            if self.debug:
+                print("\n--- GEMINI API ERROR ---")
+                print(e)
+                print("-------------------------\n")
+            st.error("Error generating response. Check terminal logs for details.")
+            return BotResponse(
+                message="An error occurred while generating a response. Please check the logs.",
+                references=[],
+            )
+
         self.logger.info(f"--- New Response Generation Started for Query: '{query}' ---")
         
         self.logger.info("Step 1: Filtering context.")

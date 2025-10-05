@@ -3,6 +3,7 @@ import time
 from chatbot import FootballChatbot 
 import logger_config 
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ def render_conditional_form():
                 prompt_key = "Match Schedule"
                 submit_button_label = "Get Schedule"
                 info_text = "Enter the name of the league (e.g., 'English Premier League')."
-                input_label = "League Name"
+                input_label = "League/Club Name"
                 placeholder_text = "e.g., Premier League"
             else: # active_form == "news"
                 title = "News Query Setup 🗞️"
@@ -166,7 +167,16 @@ def render_conditional_form():
                     st.session_state["active_form"] = None         # Hide the form
                     st.rerun()                                     # Trigger immediate processing in main()
 
+def load_css():
+    """Loads only essential custom CSS for chat bubbles and output references."""
+    css = """
+     [data-testid="stChatMessageContent"] p{
+        font-size: 1.1rem;
+    }
 
+    """
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    logger.info("Internal CSS loaded successfully.")
 def main():
     st.set_page_config(
         page_title="SocChat - No.1 Soccer Information by Blumberk ⚽",
@@ -174,139 +184,17 @@ def main():
         layout="wide"
     )
     
-    # ... (CSS Markdown tetap sama) ...
-    st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-
-/* General Body and App Container */
-body {
-    color: #e0e0e0;
-    background-color: #121212;
-    font-family: 'Inter', sans-serif;
-}
-.stApp {
-    background-color: #121212;
-    color: #e0e0e0;
-}
-
-/* Main content area */
-.main .block-container {
-    background-color: #1e1e1e;
-    border-radius: 10px;
-    padding: 2rem;
-    border: 1px solid #333333;
-}
-
-/* Sidebar */
-.st-emotion-cache-10oheav {
-    background-color: #1e1e1e;
-    border-right: 1px solid #333333;
-}
-.st-emotion-cache-10oheav .st-emotion-cache-16txtl3 {
-    color: #e0e0e0;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-}
-
-/* Chat messages */
-.st-emotion-cache-1c7y2kd {
-    background-color: #2a2a2a;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-.st-emotion-cache-4oy321 {
-    color: #e0e0e0;
-}
-
-/* Quick Action Cards */
-div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div > div > div > button {
-    background-color: #333333;
-    color: #e0e0e0;
-    border: 1px solid #555555;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-}
-div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div > div > div > button:hover {
-    background-color: #8B0000;
-    color: white;
-    border-color: #8B0000;
-}
-
-/* Form Submit Button */
-div.stFormSubmitButton > button {
-    background-color: #8B0000 !important;
-    border-color: #8B0000 !important;
-    color: white;
-    font-size: 1.1em;
-    font-weight: bold;
-    height: 50px;
-    border-radius: 10px;
-    margin-top: 15px;
-    transition: all 0.2s ease-in-out;
-}
-div.stFormSubmitButton > button:hover {
-    background-color: #e0e0e0 !important;
-    color: #8B0000 !important;
-    border-color: #8B0000 !important;
-}
-
-/* Cancel Button */
-div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:nth-child(2) button {
-    background-color: transparent !important;
-    border: none !important;
-    color: #AAAAAA !important;
-    font-size: 20px;
-    padding: 0;
-    margin: 0;
-    line-height: 1;
-    height: 30px;
-    width: 30px;
-    box-shadow: none !important;
-    float: right;
-    transition: all 0.3s ease;
-}
-div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:nth-child(2) button:hover {
-    color: #FF4B4B !important;
-    background-color: transparent !important;
-}
-
-/* Reference links */
-.reference-section {
-    margin-top: 10px;
-    margin-bottom: 5px;
-    font-size: 0.9em;
-    color: #e0e0e0;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-}
-.reference-link {
-    display: block;
-    font-size: 0.85em;
-    color: #8B0000;
-    text-decoration: none;
-    margin-bottom: 3px;
-    padding-left: 15px;
-    transition: all 0.3s ease;
-}
-.reference-link:hover {
-    text-decoration: underline;
-    color: #e0e0e0;
-    padding-left: 20px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-    
+    load_css()
+        
     st.title("SocChat - No.1 Soccer Information by Blumberk ⚽")
-    st.write("This chatbot is powered by Gemini and Exa.")
+    st.write("Chatbot ini didukung oleh Gemini dan Exa, dirancang khusus untuk informasi sepak bola.")
     logger.info("Main page rendered.")
 
+
     with st.sidebar:
-        st.header("API Keys")
+        st.title("SocChat \n No.1 Soccer Information by Blumberk")
+
+        st.header("Setup API Keys")
         api_keys_submitted = st.session_state.get("api_keys_submitted", False)
 
         gemini_api_key = st.text_input("Gemini API Key", type="password", key="gemini_api_key_input", disabled=api_keys_submitted)
@@ -331,6 +219,9 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
                     st.warning("Please enter both API keys.")
                     logger.warning("API Key submission failed: Keys were missing.")
 
+
+
+
     if "api_keys_submitted" not in st.session_state or not st.session_state.api_keys_submitted:
         st.warning("Please enter your API keys in the sidebar and click 'Submit' to start the chatbot.")
         return
@@ -344,7 +235,7 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
         logger.info("Initialized 'active_form' in session state.")
 
     for message in st.session_state.messages:
-        avatar = "🧑" if message["role"] == "user" else "⚽"
+        avatar = "https://upload.wikimedia.org/wikipedia/commons/a/aa/Message-icon-white-background.png?20210611024859" if message["role"] == "user" else "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Google-gemini-icon.svg/640px-Google-gemini-icon.svg.png"
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
             if "references" in message and message["references"]:
@@ -373,10 +264,10 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
 
     if prompt_to_process:
         logger.info(f"User prompt: '{prompt_to_process}'")
-        st.chat_message("user", avatar="🧑").write(prompt_to_process)
+        st.chat_message("user", avatar="https://upload.wikimedia.org/wikipedia/commons/a/aa/Message-icon-white-background.png?20210611024859").write(prompt_to_process)
         st.session_state.messages.append({"role": "user", "content": prompt_to_process})
 
-        with st.chat_message("assistant", avatar="⚽"):
+        with st.chat_message("assistant", avatar="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Google_Gemini_icon_2025.svg/640px-Google_Gemini_icon_2025.svg.png"):
             with st.spinner("Searching news and generating response..."):
                 try:
                     logger.info("Generating chatbot response...")
