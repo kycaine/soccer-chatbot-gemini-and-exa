@@ -1,14 +1,18 @@
 import streamlit as st
 import time
 from chatbot import FootballChatbot 
+import logger_config 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 INPUT_KEY = "user_input"
 FORM_PROMPT_KEY = "form_submitted_prompt" 
 
-
 CARD_DATA = {
-    "Analysis Match": "Provide a detailed **tactical analysis** for the most recent match involving {team_a} and {team_b}. Focus specifically on the **Winning Team's Formation or a Key Player's Role** and the key **Moment or Statistic** that defined the outcome.",
-    "Prediction Match": "Give a detailed **match prediction** for the game between **{team_a}** and **{team_b}**. Specify the **Date or Tournament Name** to narrow the search, and include historical results and key player statistics to support the prediction.",
+    "Analysis Match": "Provide a detailed **tactical analysis** for the most recent match involving {team_a} as home and {team_b} as away. Focus specifically on the **Winning Team's Formation or a Key Player's Role** and the key **Moment or Statistic** that defined the outcome.",
+    "Prediction Match": "Give a detailed **match prediction** for the game between **{team_a}** as home and **{team_b}** as away. Specify the **Date or Tournament Name** to narrow the search, and include historical results and key player statistics to support the prediction.",
 
     "Match Schedule": "What is the **full schedule of the next three matchdays** for the **{league}**? Include all competing teams, dates, and times.",
     "News": "Provide me a comprehensive **summary of all recent news** regarding **{name}**'s performance and transfer situation, specifically covering **Competition Name**.",
@@ -27,24 +31,29 @@ def quick_start_cards():
         # --- CARD 1 ---
         with cols[0]:
             if st.button("Analysis Match", key=f"card_Analysis Match", use_container_width=True):
+                logger.info("Quick Action card clicked: Analysis Match")
                 st.session_state["active_form"] = "analysis"
                 
         # --- CARD 2 ---
         with cols[1]:
             if st.button("Match Schedule", key=f"card_Match Schedule", use_container_width=True):
+                logger.info("Quick Action card clicked: Match Schedule")
                 st.session_state["active_form"] = "schedule"
 
         # --- CARD 3 ---
         with cols[2]:
             if st.button("News", key=f"card_News", use_container_width=True):
+                logger.info("Quick Action card clicked: News")
                 st.session_state["active_form"] = "news"
 
         # --- CARD 4 ---
         with cols[3]:
             if st.button("Prediction Match", key=f"card_Prediction Match", use_container_width=True):
+                logger.info("Quick Action card clicked: Prediction Match")
                 st.session_state["active_form"] = "prediction"
 
 def clear_active_form():
+    logger.info("Clearing active form.")
     st.session_state["active_form"] = None
 
 
@@ -52,6 +61,7 @@ def render_conditional_form():
     active_form = st.session_state.get("active_form")
     
     if active_form:
+        logger.info(f"Rendering conditional form for: {active_form}")
         if active_form in ["analysis", "prediction"]:
             is_two_inputs = True
             title = "Match Analysis Setup ⚽" if active_form == "analysis" else "Match Prediction Setup 🔮"
@@ -100,11 +110,11 @@ def render_conditional_form():
                 
                 if is_two_inputs:
                     st.text_input( 
-                        "Club 1 (e.g., Manchester City)", 
+                        "Club Home (e.g., Manchester City)", 
                         key="team_a_input"
                     )
                     st.text_input( 
-                        "Club 2 (e.g., Liverpool)", 
+                        "Club Away (e.g., Liverpool)", 
                         key="team_b_input"
                     )
                 else: 
@@ -121,6 +131,7 @@ def render_conditional_form():
                 )
 
             if submitted:
+                logger.info(f"Form '{active_form}' submitted.")
                 base_prompt = CARD_DATA[prompt_key]
                 full_prompt = None
 
@@ -130,8 +141,10 @@ def render_conditional_form():
                             team_a=st.session_state["team_a_input"].strip(), 
                             team_b=st.session_state["team_b_input"].strip()
                         )
+                        logger.info("Generated prompt from two-input form.")
                     else:
                         st.error("Please enter both club names to proceed.")
+                        logger.warning("Two-input form submitted with missing values.")
                         return 
                 
                 else:
@@ -141,11 +154,14 @@ def render_conditional_form():
                             full_prompt = base_prompt.format(league=single_input_val)
                         else:
                             full_prompt = base_prompt.format(name=single_input_val)
+                        logger.info("Generated prompt from single-input form.")
                     else:
                         st.error("Please enter a value to proceed.")
+                        logger.warning("Single-input form submitted with missing value.")
                         return 
 
                 if full_prompt:
+                    logger.info(f"Storing generated prompt to session state and re-running.")
                     st.session_state[FORM_PROMPT_KEY] = full_prompt # Store the generated prompt
                     st.session_state["active_form"] = None         # Hide the form
                     st.rerun()                                     # Trigger immediate processing in main()
@@ -153,11 +169,12 @@ def render_conditional_form():
 
 def main():
     st.set_page_config(
-        page_title="SocChat - Football News Chatbot ⚽",
+        page_title="SocChat - No.1 Soccer Information by Blumberk ⚽",
         page_icon="⚽",
         layout="wide"
     )
     
+    # ... (CSS Markdown tetap sama) ...
     st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -284,8 +301,9 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
 """, unsafe_allow_html=True)
 
     
-    st.title("SocChat - Football News Chatbot ⚽")
+    st.title("SocChat - No.1 Soccer Information by Blumberk ⚽")
     st.write("This chatbot is powered by Gemini and Exa.")
+    logger.info("Main page rendered.")
 
     with st.sidebar:
         st.header("API Keys")
@@ -296,17 +314,22 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
 
         if not api_keys_submitted:
             if st.button("Submit"):
+                logger.info("API Key submit button clicked.")
                 if gemini_api_key and exa_api_key:
                     with st.spinner("Checking API..."):
                         time.sleep(2)
                         try:
-                            st.session_state.chatbot = FootballChatbot(gemini_api_key=gemini_api_key, exa_api_key=exa_api_key)
+                            logger.info("Attempting to initialize chatbot with provided API keys.")
+                            st.session_state.chatbot = FootballChatbot(gemini_api_key=gemini_api_key, exa_api_key=exa_api_key, debug=True)
                             st.session_state.api_keys_submitted = True
+                            logger.info("Chatbot initialized successfully. Re-running app.")
                             st.rerun()
                         except Exception as e:
+                            logger.error(f"Failed to initialize chatbot: {e}", exc_info=True)
                             st.error(f"Failed to initialize chatbot: {e}")
                 else:
                     st.warning("Please enter both API keys.")
+                    logger.warning("API Key submission failed: Keys were missing.")
 
     if "api_keys_submitted" not in st.session_state or not st.session_state.api_keys_submitted:
         st.warning("Please enter your API keys in the sidebar and click 'Submit' to start the chatbot.")
@@ -314,9 +337,11 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
             
     if "messages" not in st.session_state:
         st.session_state.messages = []
+        logger.info("Initialized 'messages' in session state.")
         
     if "active_form" not in st.session_state:
         st.session_state["active_form"] = None
+        logger.info("Initialized 'active_form' in session state.")
 
     for message in st.session_state.messages:
         avatar = "🧑" if message["role"] == "user" else "⚽"
@@ -328,7 +353,7 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
                     if hasattr(ref, 'url') and hasattr(ref, 'title'):
                         st.markdown(f"""<a href='{ref.url}' target='_blank' class='reference-link'>📰 {ref.title}</a>""", unsafe_allow_html=True)
                     else:
-                        st.markdown(f"""<a href='{ref['url']}' target='_blank' class='reference-link'>📰 {ref['title']}</a>""", unsafe_allow_html=True)
+                        st.markdown(f"""<a href='{ref.get('url', '#')}' target='_blank' class='reference-link'>📰 {ref.get('title', 'Link')}</a>""", unsafe_allow_html=True)
 
 
     quick_start_cards()
@@ -340,22 +365,24 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
     prompt_to_process = None
     
     if st.session_state.get(FORM_PROMPT_KEY):
-        prompt_to_process = st.session_state.pop(FORM_PROMPT_KEY) 
-
+        prompt_to_process = st.session_state.pop(FORM_PROMPT_KEY)
+        logger.info(f"Processing prompt from form submission.")
     elif chat_input_value := st.chat_input("Ask me about the latest football news...", key=INPUT_KEY):
         prompt_to_process = chat_input_value
+        logger.info(f"Processing prompt from chat input.")
 
     if prompt_to_process:
-        prompt = prompt_to_process 
-
-        st.chat_message("user", avatar="🧑").write(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        logger.info(f"User prompt: '{prompt_to_process}'")
+        st.chat_message("user", avatar="🧑").write(prompt_to_process)
+        st.session_state.messages.append({"role": "user", "content": prompt_to_process})
 
         with st.chat_message("assistant", avatar="⚽"):
             with st.spinner("Searching news and generating response..."):
                 try:
-                    response = st.session_state.chatbot.generate_response(prompt)
+                    logger.info("Generating chatbot response...")
+                    response = st.session_state.chatbot.generate_response(prompt_to_process)
                     st.write(response.message)
+                    logger.info("Response generated and displayed successfully.")
                     
                     if response.references:
                         st.markdown("<div class='reference-section'>Sources:</div>", unsafe_allow_html=True)
@@ -375,9 +402,11 @@ div[data-testid="stVerticalBlock"] > div:first-child div[data-testid="column"]:n
                         "references": reference_list if response.references else []
                     })
                 except Exception as e:
+                    logger.error(f"An error occurred during response generation: {e}", exc_info=True)
                     st.error(f"An error occurred during response generation: {e}")
 
         st.rerun()
 
 if __name__ == "__main__":
+    logger.info("--- SocChat Application Starting ---")
     main()
