@@ -37,9 +37,15 @@ cd soccer-chatbot-gemini-and-exa
 ```
 
 ### 2️⃣ (Optional) Create and activate a virtual environment
+create
+```bash
 python -m venv venv
+```
+activate
+```bash
 source venv/bin/activate       # On macOS/Linux
 venv\Scripts\activate          # On Windows
+```
 
 ### 3️⃣ Install dependencies
 ```bash
