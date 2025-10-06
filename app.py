@@ -8,7 +8,6 @@ from rss_manager import fetch_rss_feeds
 
 logger = logging.getLogger(__name__)
 
-
 INPUT_KEY = "user_input"
 FORM_PROMPT_KEY = "form_submitted_prompt" 
 
@@ -28,8 +27,7 @@ RSS_FEEDS = [
 
 
 def quick_start_cards():
-    """Renders the four centered cards and handles the click actions."""
-    st.markdown("## Quick Actions")
+    st.markdown("### Quick Actions")
 
     col_spacer_left, col_cards_area, col_spacer_right = st.columns([1, 4, 1])
 
@@ -63,7 +61,6 @@ def quick_start_cards():
 def clear_active_form():
     logger.info("Clearing active form.")
     st.session_state["active_form"] = None
-
 
 def render_conditional_form():
     active_form = st.session_state.get("active_form")
@@ -175,17 +172,11 @@ def render_conditional_form():
                     st.rerun()                                     # Trigger immediate processing in main()
 
 def load_css():
-    """Loads only essential custom CSS for chat bubbles and layout."""
     css = """
-    [data-testid="stChatMessageContent"] p {
-        font-size: 1.1rem;
-    }
-
-    /* 🧷 Keep chat input fixed at bottom */
     [data-testid="stChatInput"] {
         position: fixed !important;
         bottom: 1.2rem !important;
-        left: 320px !important; /* adjust depending on sidebar width */
+        left: 320px !important;
         width: calc(100% - 360px) !important;
         z-index: 9999 !important;
         background-color: rgba(18, 18, 18, 0.9) !important;
@@ -193,14 +184,9 @@ def load_css():
         box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
     }
 
-    /* Make sure chat messages area doesn't overlap input */
-    [data-testid="stChatMessage"] {
-        padding-bottom: 90px !important;
-    }
     """
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
     logger.info("Custom CSS for fixed input loaded successfully.")
-
 
 def main():
     st.set_page_config(
@@ -214,7 +200,6 @@ def main():
     st.title("SocChat - No.1 Soccer Information by Blumberk ⚽")
     st.write("Chatbot ini didukung oleh Gemini dan Exa, dirancang khusus untuk informasi sepak bola.")
     logger.info("Main page rendered.")
-
 
     with st.sidebar:
         st.title("SocChat \n No.1 Soccer Information by Blumberk")
@@ -243,9 +228,6 @@ def main():
                 else:
                     st.warning("Please enter both API keys.")
                     logger.warning("API Key submission failed: Keys were missing.")
-
-
-
 
     if "api_keys_submitted" not in st.session_state or not st.session_state.api_keys_submitted:
         st.warning("Please enter your API keys in the sidebar and click 'Submit' to start the chatbot.")
@@ -295,11 +277,10 @@ def main():
                         else:
                             st.markdown(f"""<a href='{ref.get('url', '#')}' target='_blank' class='reference-link'>📰 {ref.get('title', 'Link')}</a>""", unsafe_allow_html=True)
 
-
         quick_start_cards()
         
         render_conditional_form()
-            
+                    
         st.markdown("---") 
 
         prompt_to_process = None
@@ -334,7 +315,6 @@ def main():
                                 else:
                                     st.markdown(f"""<a href='{ref.get('url', '#')}' target='_blank' class='reference-link'>📰 {ref.get('title', 'Link')}</a>""", unsafe_allow_html=True)
                                     reference_list.append(ref)
-
 
                         st.session_state.messages.append({
                             "role": "assistant",
