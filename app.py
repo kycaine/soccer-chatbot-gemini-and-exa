@@ -4,6 +4,7 @@ from chatbot import FootballChatbot
 import logger_config 
 import logging
 import os
+from rss_manager import fetch_rss_feeds
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,12 @@ CARD_DATA = {
     "Match Schedule": "What is the **full schedule of the next three matchdays** for the **{league}**? Include all competing teams, dates, and times.",
     "News": "Provide me a comprehensive **summary of all recent news** regarding **{name}**'s performance and transfer situation, specifically covering **Competition Name**.",
 }
+
+RSS_FEEDS = [
+    "https://feeds.bbci.co.uk/sport/football/rss.xml",
+    "https://www.skysports.com/rss/12040",
+    "https://www.espn.com/espn/rss/soccer/news"
+]
 
 
 def quick_start_cards():
@@ -168,15 +175,33 @@ def render_conditional_form():
                     st.rerun()                                     # Trigger immediate processing in main()
 
 def load_css():
-    """Loads only essential custom CSS for chat bubbles and output references."""
+    """Loads only essential custom CSS for chat bubbles and layout."""
     css = """
-     [data-testid="stChatMessageContent"] p{
+    [data-testid="stChatMessageContent"] p {
         font-size: 1.1rem;
     }
 
+    /* 🧷 Keep chat input fixed at bottom */
+    [data-testid="stChatInput"] {
+        position: fixed !important;
+        bottom: 1.2rem !important;
+        left: 320px !important; /* adjust depending on sidebar width */
+        width: calc(100% - 360px) !important;
+        z-index: 9999 !important;
+        background-color: rgba(18, 18, 18, 0.9) !important;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
+    }
+
+    /* Make sure chat messages area doesn't overlap input */
+    [data-testid="stChatMessage"] {
+        padding-bottom: 90px !important;
+    }
     """
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
-    logger.info("Internal CSS loaded successfully.")
+    logger.info("Custom CSS for fixed input loaded successfully.")
+
+
 def main():
     st.set_page_config(
         page_title="SocChat - No.1 Soccer Information by Blumberk ⚽",
@@ -225,78 +250,102 @@ def main():
     if "api_keys_submitted" not in st.session_state or not st.session_state.api_keys_submitted:
         st.warning("Please enter your API keys in the sidebar and click 'Submit' to start the chatbot.")
         return
+    
+    tab1, tab2 = st.tabs(["News", "Chatbot"])
+
+    with tab1:
+        st.header("Latest Football News")
+        articles = fetch_rss_feeds(RSS_FEEDS, limit=10)
+        if articles:
+            for article in articles:
+                with st.container(border=True):
+                    col1, col2 = st.columns([1, 3])
+                    with col1:
+                        if article.get("image"):
+                            st.image(article["image"], use_container_width=True)
+                        else:
+                            st.image("https://upload.wikimedia.org/wikipedia/commons/7/75/No_image_available.png", use_container_width=True)
+                    with col2:
+                        st.subheader(article["title"])
+                        st.write(f"🕒 {article['published']}")
+                        st.markdown(f"[Read more ▶️]({article['link']})")
+                st.markdown("---")
+
+        else:
+            st.warning("No news articles found.")
             
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-        logger.info("Initialized 'messages' in session state.")
+    with tab2:
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+            logger.info("Initialized 'messages' in session state.")
+            
+        if "active_form" not in st.session_state:
+            st.session_state["active_form"] = None
+            logger.info("Initialized 'active_form' in session state.")
+
+        for message in st.session_state.messages:
+            avatar = "https://upload.wikimedia.org/wikipedia/commons/a/aa/Message-icon-white-background.png?20210611024859" if message["role"] == "user" else "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Google-gemini-icon.svg/640px-Google-gemini-icon.svg.png"
+            with st.chat_message(message["role"], avatar=avatar):
+                st.markdown(message["content"])
+                if "references" in message and message["references"]:
+                    st.markdown("<div class='reference-section'><b>Sources:</b></div>", unsafe_allow_html=True)
+                    for ref in message["references"]:
+                        if hasattr(ref, 'url') and hasattr(ref, 'title'):
+                            st.markdown(f"""<a href='{ref.url}' target='_blank' class='reference-link'>📰 {ref.title}</a>""", unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"""<a href='{ref.get('url', '#')}' target='_blank' class='reference-link'>📰 {ref.get('title', 'Link')}</a>""", unsafe_allow_html=True)
+
+
+        quick_start_cards()
         
-    if "active_form" not in st.session_state:
-        st.session_state["active_form"] = None
-        logger.info("Initialized 'active_form' in session state.")
+        render_conditional_form()
+            
+        st.markdown("---") 
 
-    for message in st.session_state.messages:
-        avatar = "https://upload.wikimedia.org/wikipedia/commons/a/aa/Message-icon-white-background.png?20210611024859" if message["role"] == "user" else "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Google-gemini-icon.svg/640px-Google-gemini-icon.svg.png"
-        with st.chat_message(message["role"], avatar=avatar):
-            st.markdown(message["content"])
-            if "references" in message and message["references"]:
-                st.markdown("<div class='reference-section'><b>Sources:</b></div>", unsafe_allow_html=True)
-                for ref in message["references"]:
-                    if hasattr(ref, 'url') and hasattr(ref, 'title'):
-                        st.markdown(f"""<a href='{ref.url}' target='_blank' class='reference-link'>📰 {ref.title}</a>""", unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""<a href='{ref.get('url', '#')}' target='_blank' class='reference-link'>📰 {ref.get('title', 'Link')}</a>""", unsafe_allow_html=True)
-
-
-    quick_start_cards()
-    
-    render_conditional_form()
+        prompt_to_process = None
         
-    st.markdown("---") 
+        if st.session_state.get(FORM_PROMPT_KEY):
+            prompt_to_process = st.session_state.pop(FORM_PROMPT_KEY)
+            logger.info(f"Processing prompt from form submission.")
+        elif chat_input_value := st.chat_input("Ask me about the latest football news...", key=INPUT_KEY):
+            prompt_to_process = chat_input_value
+            logger.info(f"Processing prompt from chat input.")
 
-    prompt_to_process = None
-    
-    if st.session_state.get(FORM_PROMPT_KEY):
-        prompt_to_process = st.session_state.pop(FORM_PROMPT_KEY)
-        logger.info(f"Processing prompt from form submission.")
-    elif chat_input_value := st.chat_input("Ask me about the latest football news...", key=INPUT_KEY):
-        prompt_to_process = chat_input_value
-        logger.info(f"Processing prompt from chat input.")
+        if prompt_to_process:
+            logger.info(f"User prompt: '{prompt_to_process}'")
+            st.chat_message("user", avatar="https://upload.wikimedia.org/wikipedia/commons/a/aa/Message-icon-white-background.png?20210611024859").write(prompt_to_process)
+            st.session_state.messages.append({"role": "user", "content": prompt_to_process})
 
-    if prompt_to_process:
-        logger.info(f"User prompt: '{prompt_to_process}'")
-        st.chat_message("user", avatar="https://upload.wikimedia.org/wikipedia/commons/a/aa/Message-icon-white-background.png?20210611024859").write(prompt_to_process)
-        st.session_state.messages.append({"role": "user", "content": prompt_to_process})
-
-        with st.chat_message("assistant", avatar="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Google_Gemini_icon_2025.svg/640px-Google_Gemini_icon_2025.svg.png"):
-            with st.spinner("Searching news and generating response..."):
-                try:
-                    logger.info("Generating chatbot response...")
-                    response = st.session_state.chatbot.generate_response(prompt_to_process)
-                    st.write(response.message)
-                    logger.info("Response generated and displayed successfully.")
-                    
-                    if response.references:
-                        st.markdown("<div class='reference-section'>Sources:</div>", unsafe_allow_html=True)
-                        reference_list = []
-                        for ref in response.references:
-                            if hasattr(ref, 'url') and hasattr(ref, 'title'):
-                                st.markdown(f"""<a href='{ref.url}' target='_blank' class='reference-link'>📰 {ref.title}</a>""", unsafe_allow_html=True)
-                                reference_list.append({"url": ref.url, "title": ref.title})
-                            else:
-                                st.markdown(f"""<a href='{ref.get('url', '#')}' target='_blank' class='reference-link'>📰 {ref.get('title', 'Link')}</a>""", unsafe_allow_html=True)
-                                reference_list.append(ref)
+            with st.chat_message("assistant", avatar="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Google_Gemini_icon_2025.svg/640px-Google_Gemini_icon_2025.svg.png"):
+                with st.spinner("Searching news and generating response..."):
+                    try:
+                        logger.info("Generating chatbot response...")
+                        response = st.session_state.chatbot.generate_response(prompt_to_process)
+                        st.write(response.message)
+                        logger.info("Response generated and displayed successfully.")
+                        
+                        if response.references:
+                            st.markdown("<div class='reference-section'>Sources:</div>", unsafe_allow_html=True)
+                            reference_list = []
+                            for ref in response.references:
+                                if hasattr(ref, 'url') and hasattr(ref, 'title'):
+                                    st.markdown(f"""<a href='{ref.url}' target='_blank' class='reference-link'>📰 {ref.title}</a>""", unsafe_allow_html=True)
+                                    reference_list.append({"url": ref.url, "title": ref.title})
+                                else:
+                                    st.markdown(f"""<a href='{ref.get('url', '#')}' target='_blank' class='reference-link'>📰 {ref.get('title', 'Link')}</a>""", unsafe_allow_html=True)
+                                    reference_list.append(ref)
 
 
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": response.message,
-                        "references": reference_list if response.references else []
-                    })
-                except Exception as e:
-                    logger.error(f"An error occurred during response generation: {e}", exc_info=True)
-                    st.error(f"An error occurred during response generation: {e}")
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": response.message,
+                            "references": reference_list if response.references else []
+                        })
+                    except Exception as e:
+                        logger.error(f"An error occurred during response generation: {e}", exc_info=True)
+                        st.error(f"An error occurred during response generation: {e}")
 
-        st.rerun()
+            st.rerun()
 
 if __name__ == "__main__":
     logger.info("--- SocChat Application Starting ---")

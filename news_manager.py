@@ -22,7 +22,7 @@ class NewsManager:
             )
             self.logger.info(f"Exa API call successful. Found {len(search_response.results)} potential articles.")
 
-            with st.expander("Debug Info: Exa Search", expanded=False):
+            with st.expander("Analyzing...", expanded=False):
                 st.write(f"Found {len(search_response.results)} results from Exa.")
                 for i, result in enumerate(search_response.results):
                     st.write(f"Result {i+1} Title: {result.title}")
